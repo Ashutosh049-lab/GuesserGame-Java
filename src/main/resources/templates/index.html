@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guesser Game</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 600px;
+            width: 100%;
+        }
+        
+        h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        
+        .game-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        
+        .game-section h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        
+        input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            margin-bottom: 10px;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        button:hover {
+            background: #5568d3;
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .player-input {
+            margin-bottom: 15px;
+        }
+        
+        .player-input label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 500;
+        }
+        
+        #results {
+            margin-top: 20px;
+            padding: 20px;
+            background: #e8f5e9;
+            border-radius: 10px;
+            display: none;
+        }
+        
+        #results h2 {
+            color: #2e7d32;
+            margin-bottom: 15px;
+        }
+        
+        .result-item {
+            padding: 10px;
+            margin: 5px 0;
+            background: white;
+            border-radius: 5px;
+        }
+        
+        .winner {
+            background: #ffd700;
+            font-weight: bold;
+        }
+        
+        .message {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+            display: none;
+        }
+        
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 Guesser Game</h1>
+        
+        <div id="guesserSection" class="game-section">
+            <h2>Step 1: Guesser Sets the Number</h2>
+            <input type="number" id="secretNumber" placeholder="Enter secret number (1-100)" min="1" max="100">
+            <button onclick="setSecret()">Set Secret Number</button>
+        </div>
+        
+        <div id="playersSection" class="game-section hidden">
+            <h2>Step 2: Players Make Their Guesses</h2>
+            
+            <div class="player-input">
+                <label>Player 1</label>
+                <input type="number" id="player1Guess" placeholder="Enter guess (1-100)" min="1" max="100">
+                <button onclick="makeGuess('Player 1', 'player1Guess', 'btn1')" id="btn1">Submit Guess</button>
+            </div>
+            
+            <div class="player-input">
+                <label>Player 2</label>
+                <input type="number" id="player2Guess" placeholder="Enter guess (1-100)" min="1" max="100">
+                <button onclick="makeGuess('Player 2', 'player2Guess', 'btn2')" id="btn2">Submit Guess</button>
+            </div>
+            
+            <div class="player-input">
+                <label>Player 3</label>
+                <input type="number" id="player3Guess" placeholder="Enter guess (1-100)" min="1" max="100">
+                <button onclick="makeGuess('Player 3', 'player3Guess', 'btn3')" id="btn3">Submit Guess</button>
+            </div>
+            
+            <button onclick="showResults()" id="resultsBtn" style="background: #28a745; margin-top: 20px;" disabled>
+                Show Results
+            </button>
+        </div>
+        
+        <div id="message" class="message"></div>
+        
+        <div id="results">
+            <h2>Results</h2>
+            <div id="resultContent"></div>
+            <button onclick="resetGame()" style="background: #dc3545; margin-top: 20px;">Play Again</button>
+        </div>
+    </div>
+    
+    <script>
+        let guessCount = 0;
+        
+        function showMessage(msg, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.textContent = msg;
+            messageDiv.className = 'message ' + type;
+            messageDiv.style.display = 'block';
+            setTimeout(() => messageDiv.style.display = 'none', 3000);
+        }
+        
+        async function setSecret() {
+            const secretNumber = document.getElementById('secretNumber').value;
+            
+            if (!secretNumber || secretNumber < 1 || secretNumber > 100) {
+                showMessage('Please enter a valid number between 1 and 100', 'error');
+                return;
+            }
+            
+            const response = await fetch('/set-secret', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: `secretNumber=${secretNumber}`
+            });
+            
+            const data = await response.json();
+            showMessage(data.message, 'success');
+            
+            document.getElementById('guesserSection').classList.add('hidden');
+            document.getElementById('playersSection').classList.remove('hidden');
+        }
+        
+        async function makeGuess(playerName, inputId, btnId) {
+            const guess = document.getElementById(inputId).value;
+            
+            if (!guess || guess < 1 || guess > 100) {
+                showMessage('Please enter a valid number between 1 and 100', 'error');
+                return;
+            }
+            
+            const response = await fetch('/guess', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: `playerName=${playerName}&guess=${guess}`
+            });
+            
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                document.getElementById(btnId).disabled = true;
+                document.getElementById(inputId).disabled = true;
+                showMessage(`${playerName} guess recorded!`, 'success');
+                
+                guessCount++;
+                if (guessCount === 3) {
+                    document.getElementById('resultsBtn').disabled = false;
+                }
+            }
+        }
+        
+        async function showResults() {
+            const response = await fetch('/results');
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                let html = `<div class="result-item"><strong>Secret Number:</strong> ${data.secretNumber}</div>`;
+                
+                for (const [player, guess] of Object.entries(data.guesses)) {
+                    const isWinner = guess === data.secretNumber;
+                    html += `<div class="result-item ${isWinner ? 'winner' : ''}">
+                        ${player}: ${guess} ${isWinner ? '🎉' : ''}
+                    </div>`;
+                }
+                
+                html += `<div class="result-item" style="margin-top: 15px; font-size: 1.2em;">
+                    ${data.result}
+                </div>`;
+                
+                document.getElementById('resultContent').innerHTML = html;
+                document.getElementById('playersSection').classList.add('hidden');
+                document.getElementById('results').style.display = 'block';
+            }
+        }
+        
+        function resetGame() {
+            fetch('/reset', {method: 'POST'})
+                .then(() => location.reload());
+        }
+    </script>
+</body>
+</html>
